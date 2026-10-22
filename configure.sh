@@ -111,9 +111,9 @@ install_deps() {
         confirm "Proceed?" || return 1
         sudo dnf install -y python3 bluez
       elif have pacman; then
-        say "Will run: sudo pacman -S --needed python bluez bluez-utils bluez-deprecated-utils"
+        say "Will run: sudo pacman -S --needed python bluez bluez-utils bluez-deprecated-tools"
         confirm "Proceed?" || return 1
-        sudo pacman -S --needed --noconfirm python bluez bluez-utils bluez-deprecated-utils
+        sudo pacman -S --needed --noconfirm python bluez bluez-utils bluez-deprecated-tools
       elif have zypper; then
         say "Will run: sudo zypper install -y python3 bluez"
         confirm "Proceed?" || return 1
