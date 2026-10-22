@@ -23,6 +23,8 @@ All timings are configurable.
 - Python 3.
 - Linux: `bluez` (`hcitool`, `l2ping` or `bluetoothctl`), systemd, and something that handles
   `loginctl lock-session` (all common desktop environments do).
+- Arch / Omarchy: `hcitool` and `l2ping` are in `bluez-deprecated-tools`. On Omarchy `loginctl
+  lock-session` does nothing, so `btlock` calls `omarchy-system-lock` instead.
 - macOS: either `pyobjc-framework-IOBluetooth` or [`blueutil`](https://github.com/toy/blueutil).
 
 `make configure` checks for these and offers to install what is missing.

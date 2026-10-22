@@ -160,6 +160,7 @@ def lock_screen():
         return
 
     for cmd in (
+        ["omarchy-system-lock"],  # Omarchy: lock-session does nothing there
         ["loginctl", "lock-session"],
         ["xdg-screensaver", "lock"],
         ["gnome-screensaver-command", "-l"],
