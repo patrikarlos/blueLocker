@@ -98,7 +98,8 @@ python3 btlock.py AA:BB:CC:DD:EE:FF --dry-run -v   # log what it would do, never
 | `-v` | off | Debug logging (logs every probe) |
 | `--version` | | Print the git commit this was built from and exit |
 
-Because a probe can take several seconds, the real cycle is the interval plus the probe time.
+Because a probe can take several seconds (on Linux up to about 20 while the adapter is busy
+scanning), the real cycle is the interval plus the probe time.
 
 ## Version
 
@@ -140,7 +141,9 @@ Phones, iPhones in particular, change their Bluetooth LE address regularly, so B
 reliable for this. Instead `btlock` pages the paired phone over classic Bluetooth:
 
 - Linux: `hcitool name`, then `l2ping`, then `bluetoothctl info` (which only sees the phone while it
-  is connected).
+  is connected). While the adapter is scanning for devices (for example while a desktop Bluetooth
+  panel is open), some adapters reject `hcitool name` at once. `btlock` treats that as "busy", not
+  as a miss, and retries every second for up to 12 seconds.
 - macOS: opens and closes a baseband connection through IOBluetooth, or `blueutil` as a fallback.
 
 Locking uses `loginctl lock-session` (falling back to `xdg-screensaver`) on Linux, and the login

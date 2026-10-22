@@ -78,14 +78,30 @@ def run(cmd, timeout):
 # --------------------------------------------------------------------------
 # Presence probes
 # --------------------------------------------------------------------------
+# Longest time to wait for a busy (scanning) adapter before treating it as a miss
+HCITOOL_BUSY_WAIT = 12
+
+
 def probe_linux(mac, timeout):
     tried = False
 
     if shutil.which("hcitool"):
         tried = True
-        rc, out = run(["hcitool", "name", mac], timeout)
-        if rc == 0 and out:
-            return True
+        # While the adapter is scanning (e.g. a desktop Bluetooth panel is open),
+        # some controllers reject the name request at once: empty output in a few
+        # ms. That says nothing about the phone. Scans run in bursts of several
+        # seconds, so keep retrying until the adapter is free again. A slow
+        # failure means the phone really did not answer, so stop there.
+        busy_until = time.monotonic() + HCITOOL_BUSY_WAIT
+        while True:
+            start = time.monotonic()
+            rc, out = run(["hcitool", "name", mac], timeout)
+            if rc == 0 and out:
+                return True
+            if time.monotonic() - start >= 1 or time.monotonic() >= busy_until:
+                break
+            log.debug("hcitool name was rejected instantly (adapter busy?), retrying")
+            time.sleep(1)
 
     if shutil.which("l2ping"):  # needs root / CAP_NET_RAW
         tried = True
