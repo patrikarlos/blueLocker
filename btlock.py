@@ -169,6 +169,19 @@ def adapter_powered():
     return m is None or m.group(1) == "yes"
 
 
+def stop_adapter_off():
+    """Tell the user that Bluetooth is off, then exit (Linux only).
+
+    Exit code 0, so systemd (Restart=on-failure) does not start btlock again.
+    """
+    msg = ("Bluetooth on this computer is off, so btlock has stopped and the screen "
+           "will not lock. Turn Bluetooth on, then run: systemctl --user start btlock")
+    log.error("%s", msg)
+    if shutil.which("notify-send"):
+        run(["notify-send", "--urgency=critical", "--app-name=btlock", "btlock stopped", msg], 5)
+    sys.exit(0)
+
+
 def probe(mac, timeout):
     return probe_macos(mac, timeout) if SYSTEM == "Darwin" else probe_linux(mac, timeout)
 
@@ -235,6 +248,7 @@ def main():
         sys.exit(0 if present else 1)
 
     locked = False
+    adapter_off = False  # adapter seen off on the previous check
     started = time.monotonic()
     log.info("btlock %s", get_version())
     log.info("Watching %s (every %ss, retry after %ss)", mac, args.interval, args.retry_delay)
@@ -249,15 +263,27 @@ def main():
                 if present:
                     log.info("Phone found again on retry")
 
+            powered = present or adapter_powered()
+            if powered:
+                adapter_off = False
             if present:
                 if locked:
                     log.info("Phone is back")
                 locked = False
                 log.debug("Phone present")
-            elif not adapter_powered():
-                log.warning("Local Bluetooth adapter is off - cannot tell if phone is away, not locking")
             elif time.monotonic() - started < args.grace:
+                # Bluetooth may not be up yet right after login, so this also
+                # covers an adapter that is still off.
                 log.info("Phone missing, but still within the %ss start-up grace - not locking", args.grace)
+            elif not powered:
+                # Without a working adapter the phone can't be seen, so locking
+                # would be wrong and staying would only fill the log. Check twice
+                # so a short blip (e.g. after resume) does not stop btlock.
+                if not adapter_off:
+                    adapter_off = True
+                    log.warning("Local Bluetooth adapter is off - not locking, checking again next cycle")
+                else:
+                    stop_adapter_off()
             elif not locked:
                 log.info("Phone still missing - locking screen")
                 if not args.dry_run:

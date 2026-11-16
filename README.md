@@ -102,8 +102,11 @@ python3 btlock.py AA:BB:CC:DD:EE:FF --dry-run -v   # log what it would do, never
 Because a probe can take several seconds (on Linux up to about 20 while the adapter is busy
 scanning), the real cycle is the interval plus the probe time.
 
-On Linux, `btlock` never locks while the computer's own Bluetooth adapter is switched off or
-missing, because it then cannot tell whether the phone is near. It logs a warning instead.
+On Linux, if the computer's own Bluetooth adapter is switched off or missing, `btlock` cannot
+tell whether the phone is near. During the start-up grace this is ignored (Bluetooth may not be up
+yet right after login). After that, `btlock` does not lock. If the adapter is still off one cycle
+later, it shows a desktop notification, logs one error and stops. Turn Bluetooth on and start it
+again with `make start` (or `systemctl --user start btlock`).
 
 ## Version
 
@@ -174,7 +177,7 @@ framework's lock call (falling back to `pmset displaysleepnow`) on macOS.
   away, the screen stays unlocked. Keep your normal screen-lock timeout as well.
 - Classic Bluetooth paging can use a little phone battery. Increase `--interval` if that matters.
 - A phone with Bluetooth switched off, or one that stops answering pages while idle, counts as absent.
-- On Linux, switching off the computer's Bluetooth stops all locking until it is switched on again.
+- On Linux, switching off the computer's Bluetooth stops `btlock` until you start it again.
 
 ## License
 
