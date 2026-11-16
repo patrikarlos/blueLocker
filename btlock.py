@@ -152,6 +152,23 @@ def probe_macos(mac, timeout):
     )
 
 
+def adapter_powered():
+    """False if the local Bluetooth adapter is switched off or missing (Linux only).
+
+    A powered-off adapter can't see the phone, so "phone not found" then says
+    nothing about distance and must not trigger a lock. Unknown -> True.
+    """
+    if SYSTEM == "Darwin" or not shutil.which("bluetoothctl"):
+        return True
+    rc, out = run(["bluetoothctl", "show"], 5)
+    if rc != 0:
+        return True
+    if "No default controller" in out:
+        return False
+    m = re.search(r"Powered:\s+(yes|no)", out)
+    return m is None or m.group(1) == "yes"
+
+
 def probe(mac, timeout):
     return probe_macos(mac, timeout) if SYSTEM == "Darwin" else probe_linux(mac, timeout)
 
@@ -197,6 +214,8 @@ def main():
     ap.add_argument("--interval", type=int, default=30, help="seconds between checks (30)")
     ap.add_argument("--retry-delay", type=int, default=15, help="seconds before re-check after a miss (15)")
     ap.add_argument("--timeout", type=int, default=8, help="per-probe timeout in seconds (8)")
+    ap.add_argument("--grace", type=int, default=120,
+                    help="seconds after start during which a missing phone never locks (120)")
     ap.add_argument("--dry-run", action="store_true", help="log instead of locking")
     ap.add_argument("--once", action="store_true", help="probe once, print result and exit")
     ap.add_argument("-v", "--verbose", action="store_true")
@@ -216,6 +235,7 @@ def main():
         sys.exit(0 if present else 1)
 
     locked = False
+    started = time.monotonic()
     log.info("btlock %s", get_version())
     log.info("Watching %s (every %ss, retry after %ss)", mac, args.interval, args.retry_delay)
 
@@ -234,6 +254,10 @@ def main():
                     log.info("Phone is back")
                 locked = False
                 log.debug("Phone present")
+            elif not adapter_powered():
+                log.warning("Local Bluetooth adapter is off - cannot tell if phone is away, not locking")
+            elif time.monotonic() - started < args.grace:
+                log.info("Phone missing, but still within the %ss start-up grace - not locking", args.grace)
             elif not locked:
                 log.info("Phone still missing - locking screen")
                 if not args.dry_run:

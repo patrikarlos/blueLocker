@@ -93,6 +93,7 @@ python3 btlock.py AA:BB:CC:DD:EE:FF --dry-run -v   # log what it would do, never
 | `--interval` | 30 | Seconds between checks |
 | `--retry-delay` | 15 | Seconds before re-checking after a miss |
 | `--timeout` | 8 | Per-probe timeout in seconds |
+| `--grace` | 120 | Seconds after start during which a missing phone never locks |
 | `--dry-run` | off | Log instead of locking |
 | `--once` | off | Probe once and exit |
 | `-v` | off | Debug logging (logs every probe) |
@@ -100,6 +101,9 @@ python3 btlock.py AA:BB:CC:DD:EE:FF --dry-run -v   # log what it would do, never
 
 Because a probe can take several seconds (on Linux up to about 20 while the adapter is busy
 scanning), the real cycle is the interval plus the probe time.
+
+On Linux, `btlock` never locks while the computer's own Bluetooth adapter is switched off or
+missing, because it then cannot tell whether the phone is near. It logs a warning instead.
 
 ## Version
 
@@ -170,6 +174,7 @@ framework's lock call (falling back to `pmset displaysleepnow`) on macOS.
   away, the screen stays unlocked. Keep your normal screen-lock timeout as well.
 - Classic Bluetooth paging can use a little phone battery. Increase `--interval` if that matters.
 - A phone with Bluetooth switched off, or one that stops answering pages while idle, counts as absent.
+- On Linux, switching off the computer's Bluetooth stops all locking until it is switched on again.
 
 ## License
 
