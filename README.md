@@ -131,7 +131,8 @@ checkout asks git directly. Without git history (for example a downloaded tarbal
 
 On Linux the journal is rotated by journald. On macOS the log file is a plain append-only file and
 is **not rotated**. At the default log level it only records events (misses, locks, returns), so it
-grows very slowly. Avoid running the service with `-v`.
+grows very slowly: once the screen is locked, further misses during the same absence are logged only
+with `-v`. Avoid running the service with `-v`.
 
 Typical log lines:
 

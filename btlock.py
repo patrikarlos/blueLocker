@@ -257,7 +257,10 @@ def main():
         while True:
             present = probe(mac, args.timeout)
             if not present:
-                log.info("Phone not detected, re-checking in %ss", args.retry_delay)
+                # Once locked for this absence, further misses are not news:
+                # keep them out of the normal log (it is not rotated on macOS).
+                log.log(logging.DEBUG if locked else logging.INFO,
+                        "Phone not detected, re-checking in %ss", args.retry_delay)
                 time.sleep(args.retry_delay)
                 present = probe(mac, args.timeout)
                 if present:
